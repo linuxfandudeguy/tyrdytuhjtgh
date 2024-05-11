@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diffusion Visualization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            margin-bottom: 20px;
+        }
+        div {
+            margin-bottom: 10px;
+        }
+        label {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        input[type="number"] {
+            width: 60px;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: purple;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.5s ease;
+        }
+        button:hover {
+            background-color: blue;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas"></canvas>
+    <div>
+        <label for="diffusionRate">Diffusion Rate:</label>
+        <input type="number" id="diffusionRate" value="0.2" step="0.01">
+    </div>
+    <div>
+        <label for="iterations">Iterations:</label>
+        <input type="number" id="iterations" value="1000" step="1">
+    </div>
+    <div>
+        <label for="gridSize">Grid Size:</label>
+        <input type="number" id="gridSize" value="100" step="1">
+    </div>
+    <button id="updateButton">Update Diffusion</button>
+
+    <script>
+        const myCanvas = document.getElementById('myCanvas');
+        const myCtx = myCanvas.getContext('2d');
+
+        let diffusionRateInput = document.getElementById('diffusionRate');
+        let iterationsInput = document.getElementById('iterations');
+        let gridSizeInput = document.getElementById('gridSize');
+        let updateButton = document.getElementById('updateButton');
+
+        function updateCanvasSize() {
+            const gridSize = parseInt(gridSizeInput.value);
+            myCanvas.width = gridSize;
+            myCanvas.height = gridSize;
+        }
+
+        function updateDiffusion() {
+            const gridSize = parseInt(gridSizeInput.value);
+            const diffusionRate = parseFloat(diffusionRateInput.value);
+            const iterations = parseInt(iterationsInput.value);
+
+            // Adjust canvas size
+            updateCanvasSize();
+
+            // Initialize grid
+            let grid = [];
+            for (let i = 0; i < gridSize; i++) {
+                grid[i] = [];
+                for (let j = 0; j < gridSize; j++) {
+                    // Set initial concentration, for simplicity, let's initialize with a peak in the center
+                    const distanceToCenter = Math.sqrt((i - gridSize / 2) ** 2 + (j - gridSize / 2) ** 2);
+                    grid[i][j] = Math.exp(-distanceToCenter / 10);
+                }
+            }
+
+            // Perform diffusion
+            for (let iter = 0; iter < iterations; iter++) {
+                let newGrid = [];
+                for (let i = 0; i < gridSize; i++) {
+                    newGrid[i] = [];
+                    for (let j = 0; j < gridSize; j++) {
+                        // Calculate new concentration based on neighboring cells
+                        let sum = grid[i][j] * (1 - 4 * diffusionRate);
+                        sum += (grid[i - 1]?.[j] || 0) * diffusionRate;
+                        sum += (grid[i + 1]?.[j] || 0) * diffusionRate;
+                        sum += (grid[i]?.[j - 1] || 0) * diffusionRate;
+                        sum += (grid[i]?.[j + 1] || 0) * diffusionRate;
+                        newGrid[i][j] = sum;
+                    }
+                }
+                // Update grid
+                grid = newGrid;
+            }
+
+            // Render the diffusion process on canvas
+            myCtx.clearRect(0, 0, myCanvas.width, myCanvas.height);
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    // Map concentration to grayscale color
+                    const color = Math.floor(grid[i][j] * 255);
+                    myCtx.fillStyle = `rgb(${color}, ${color}, ${color})`;
+                    myCtx.fillRect(i, j, 1, 1);
+                }
+            }
+        }
+
+        updateButton.addEventListener('click', updateDiffusion);
+
+        // Initial diffusion update
+        updateCanvasSize();
+        updateDiffusion();
+    </script>
+</body>
+</html>
